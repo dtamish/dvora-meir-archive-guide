@@ -5,14 +5,23 @@ ap=argparse.ArgumentParser();ap.add_argument('--research',required=True);a=ap.pa
 research=json.loads(Path(a.research).read_text(encoding='utf-8'))
 required=['title','url','source','rightsOwner','mediaType','mediaGroup','period','category','description','editorialUse','rightsStatus','rightsGroup','verificationNote','nextAction']
 public=[]
+video_n=0
+still_n=0
 for n,raw in enumerate(research['items'],1):
     missing=[k for k in required if not str(raw.get(k,'')).strip()]
     if missing: raise SystemExit(f'item {n} missing {missing}')
-    x=dict(raw);x['id']=x.get('id') or f'DM-A{n:03d}';x['sourceUrl']=x.pop('url');x['driveUrl']='';x['section']=x.pop('category');x.setdefault('subcategory','');x.setdefault('relevanceType','context');public.append(x)
+    x=dict(raw);x['sourceUrl']=x.pop('url');x['driveUrl']='';x['section']=x.pop('category');x.setdefault('subcategory','');x.setdefault('relevanceType','context');x['assetCount']=1
+    x['mediaGroup']='video' if 'youtube.com/' in x['sourceUrl'] or 'youtu.be/' in x['sourceUrl'] else 'stills'
+    if x['mediaGroup']=='video':
+        video_n+=1;x['id']=f'DM-V{video_n:03d}'
+    else:
+        still_n+=1;x['id']=f'DM-C{still_n:03d}'
+    x['rightsGroup']='open' if 'commons.wikimedia.org/' in x['sourceUrl'] else 'permission'
+    public.append(x)
 # Stable family album request cards; these are not claims that assets exist.
 family=[]
 for n,b in enumerate(research.get('familyAlbumBlueprints',[]),1):
-    family.append({'id':f'DM-F{n:03d}','section':'family_requests','period':'משפחה · נדרש איסוף','title':b['title'],'mediaType':'אלבום תמונות מבוקש','mediaGroup':'stills','description':b['description'],'editorialUse':b['editorialUse'],'relevanceType':'character','verificationNote':'Blueprint בלבד: האלבום או התמונות עדיין לא נמסרו ולא נבדקו.','subcategory':b.get('subcategory','אלבום משפחתי'),'source':'משפחת דבורה ומאיר — טרם נמסר','rightsOwner':'המשפחה / הצלם המקורי','date':'לא ידוע','rightsStatus':'משפחתי · נדרש אישור וזיהוי','rightsGroup':'family','nextAction':'לבקש: '+', '.join(b.get('requestedMaterials',[]))+'; '+b.get('safetyNote','לאסוף זיהוי, תאריך וקרדיט.'),'sourceUrl':'','driveUrl':'','clipNames':[]})
+    family.append({'id':f'DM-F{n:03d}','section':'family_requests','period':'משפחה · נדרש איסוף','title':b['title'],'mediaType':'אלבום תמונות מבוקש','mediaGroup':'stills','assetCount':0,'description':b['description'],'editorialUse':b['editorialUse'],'relevanceType':'character','verificationNote':'Blueprint בלבד: האלבום או התמונות עדיין לא נמסרו ולא נבדקו.','subcategory':b.get('subcategory','אלבום משפחתי'),'source':'משפחת דבורה ומאיר — טרם נמסר','rightsOwner':'המשפחה / הצלם המקורי','date':'לא ידוע','rightsStatus':'משפחתי · נדרש אישור וזיהוי','rightsGroup':'family','nextAction':'לבקש: '+', '.join(b.get('requestedMaterials',[]))+'; '+b.get('safetyNote','לאסוף זיהוי, תאריך וקרדיט.'),'sourceUrl':'','driveUrl':'','clipNames':[]})
 items=public+family
 assert len({x['id'] for x in items})==len(items)
 assert len({x['sourceUrl'] for x in public})==len(public)
