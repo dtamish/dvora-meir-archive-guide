@@ -1,0 +1,6 @@
+{
+  "name":"dvora-meir-archive-guide",
+  "version":"1.0.0",
+  "private":true,
+  "scripts":{"generate":"python tools/build_dataset.py --research ../../AppData/Local/hermes/cache/dvora-meir-archive-research.json","test":"node --test tests/*.test.mjs","check":"npm run generate && npm test"}
+}
